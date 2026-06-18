@@ -1,0 +1,25 @@
+@import '../../../styles.scss';
+
+.component {
+  .section {
+    padding: 0.5rem 0.5rem 1rem;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+
+    .field {
+      width: 200px;
+    }
+
+    .field ur-dropdown,
+    .field ur-dialog-input {
+      width: 100%;
+    }
+  }
+
+  .simulation {
+    display: flex;
+    gap: 10px;
+    max-width: 150px;
+  }
+}

@@ -1,0 +1,28 @@
+{
+        "application": {
+          "nodes": {
+            "funh-tool-modbus-driver-tool-modbus-driver-app": {
+              "title": "Tool Modbus Driver App",
+              "supportiveText": "Tool Modbus Driver App - Supportive Text"
+              }
+        }
+    },
+        "program": {
+          "tree": {
+            "nodes": {
+              "funh-tool-modbus-driver-tool-modbus-driver-pg": "Tool Modbus Driver Pg"
+          }
+        }
+      },
+        "program-node-labels": {
+            "tool-modbus-driver-pg": {
+                "nodeTitle": "Node Title",
+                "subTitle": "Sub Title - {{ dynamicValue }}"
+            }
+        },
+        "sidebar-items": {
+          "funh-tool-modbus-driver-tool-modbus-driver-bar": {
+            "title": "Tool Modbus Driver Bar"
+            }
+    }
+}

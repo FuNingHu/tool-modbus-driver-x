@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+tool-modbus-driver-frontend/node_modules/
+tool-modbus-driver-backend/node_modules/
+
+# Build outputs
+dist/
+target/*.urcapx
+
+# Angular cache
+.angular/
+tool-modbus-driver-frontend/.angular/
+
+# Lock files (do not commit)
+package-lock.json
+tool-modbus-driver-frontend/package-lock.json
+tool-modbus-driver-backend/package-lock.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Temporary files
+*.tmp
+.cache/

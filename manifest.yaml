@@ -1,0 +1,26 @@
+metadata:
+  vendorID: "funh"
+  urcapID: "tool-modbus-driver"
+  version: 1.0.1
+  vendorName: "funh"
+  urcapName: "Tool Modbus Driver"
+  contactInfo: "Energivej 25, 5260 Odense S, Denmark, funh@universal-robots.com"
+  description: "Tool Modbus Driver URCap"
+  copyright: "Copyright (c) 2026 Universal Robots. All rights reserved."
+  licenseType: "NA"
+artifacts:
+  containers:
+  - id: "tool-modbus-driver-backend"
+    image: "tool-modbus-driver-backend:latest"
+    ingress:
+      - id: "xmlrpc"
+        containerPort: 54321
+        protocol: http
+        proxyUrl: /
+    devices:
+      - type: ttyTool
+    startup: auto
+  webArchives:
+  - id: "tool-modbus-driver-frontend"
+    folder: "tool-modbus-driver-frontend"
+    # devUrl: http://host.gateway.ip:4200/

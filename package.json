@@ -1,0 +1,36 @@
+{
+  "name": "tool-modbus-driver",
+  "version": "0.0.0",
+  "scripts": {
+  "start": "npm run start --prefix tool-modbus-driver-frontend",
+  "install-frontend": "npm install --prefix tool-modbus-driver-frontend",
+  "lint": "npm run lint --prefix tool-modbus-driver-frontend",
+  "build-frontend": "npm run build --prefix tool-modbus-driver-frontend",
+  "copy-frontend": "ncp 'tool-modbus-driver-frontend/dist' 'dist'",
+  "write-sbom": "npm run write-sbom-frontend",
+  "write-sbom-frontend": "write-ur-packages ./tool-modbus-driver-frontend/package-lock.json dist",
+  "install-backend": "npm install --prefix tool-modbus-driver-backend",
+  "copy-backend": "ncp 'tool-modbus-driver-backend/dist' dist/tool-modbus-driver-backend",
+  "build-backend": "npm run build --prefix tool-modbus-driver-backend",
+  "prebuild": "npm run clean-dist && npm run clean-target && npm run validate-manifest",
+  "build-arm": "export ARCH=linux/arm64 && npm run build",
+  "postinstall": "npm run install-frontend && npm run install-backend",
+  "build": "npm run build-backend && npm run build-frontend",
+  "prepackage": "mkdir dist && npm run copy-backend && npm run copy-frontend && npm run copy-manifest && npm run copy-license && npm run write-sbom",
+  "postbuild": "npm run package",
+  "package": "package-urcap dist target",
+  "copy-manifest": "ncp 'manifest.yaml' 'dist/manifest.yaml'",
+  "copy-license": "ncp 'LICENSE' 'dist/LICENSE'",
+  "clean-dist": "rimraf dist",
+  "clean-target": "rimraf target",
+  "install-urcap": "install-urcap 'target/tool-modbus-driver*.urcapx' '../manifest-spec-19.10.31.json'",
+  "delete-urcap": "delete-urcap funh tool-modbus-driver",
+  "validate-manifest": "validate-manifest 'manifest.yaml' '../manifest-spec-19.10.31.json'"
+},
+  "private": true,
+  "devDependencies": {
+  "@universal-robots/urcap-utils": "2.1.2",
+  "ncp": "2.0.0",
+  "rimraf": "5.0.7"
+  }
+}

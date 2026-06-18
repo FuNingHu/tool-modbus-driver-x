@@ -1,0 +1,83 @@
+/// <reference lib="webworker" />
+import {
+    ApplicationBehaviors,
+    ApplicationNode, OptionalPromise,
+    PopupLevel,
+    registerApplicationBehavior,
+    ScriptBuilder
+} from '@universal-robots/contribution-api';
+import { ToolModbusDriverAppNode } from './tool-modbus-driver-app.node';
+import { URCAP_ID, VENDOR_ID } from 'src/generated/contribution-constants';
+
+// factory is required
+const createApplicationNode = (): OptionalPromise<ToolModbusDriverAppNode> => ({
+    type: 'funh-tool-modbus-driver-tool-modbus-driver-app',    // type is required
+    version: '1.0.0',     // version is required
+    deviceAddress: 1,
+    baudrate: '9600',
+    isSimulation: false
+});
+
+// generatePreamble is optional
+const generatePreambleScriptCode = async (node: ToolModbusDriverAppNode): Promise<ScriptBuilder> => {
+    const builder = new ScriptBuilder();
+    const url = `servicegateway/${VENDOR_ID}/${URCAP_ID}/tool-modbus-driver-backend/xmlrpc`;
+    builder.assign('tool_modbus_driver',`rpc_factory("xmlrpc","${location.protocol}//${url}/")`);
+    if (!node.isSimulation) {
+        builder.addStatements('set_tool_voltage(24)');
+        builder.addStatements(`set_tool_communication(True, ${node.baudrate}, 0, 1, 1.0, 3.5)`);
+        builder.sleep(0.2);
+        builder.addStatements(`tool_modbus_driver.openMaster("/dev/ur-ttylink/ttyTool", "${node.baudrate}", ${node.deviceAddress})`);
+        
+        // builder.popup('Tool Modbus Driver is ready.', 'Tool_modbus_driver_ready', PopupLevel.INFO, true);
+    }
+    builder.addStatements(`####### Tool Modbus Functions Definitions #######`);
+    builder.addStatements(`def close_modbus_master():`);
+    builder.addStatements(`  return tool_modbus_driver.closeMaster()`)
+    builder.addStatements(`end`);
+    builder.addStatements(`def get_modbus_error_info():`);
+    builder.addStatements(`  return tool_modbus_driver.getErrorInfo()`);
+    builder.addStatements(`end`);
+    builder.addStatements(`def get_modbus_my_id():`);
+    builder.addStatements(`  return tool_modbus_driver.getMyId()`);
+    builder.addStatements(`end`);
+    builder.addStatements(`def is_tool_modbus_service_reachable():`);
+    builder.addStatements(`  return tool_modbus_driver.isReachable()`);
+    builder.addStatements(`end`);
+    builder.addStatements(`def is_tool_modbus_connected()`);
+    builder.addStatements(`  return tool_modbus_driver.isConnected()`);
+    builder.addStatements(`end`);
+    builder.addStatements(`def tool_modbus_open(com, bau, my_id):`);
+    builder.addStatements(`  set_tool_voltage(24)`)
+    builder.addStatements(`  set_tool_communication(True, bau, 0,1,1.0,3.5)`)
+    builder.addStatements(`  return tool_modbus_driver.openMaster(com, bau, my_id)`);
+    builder.addStatements(`end`);
+    builder.addStatements(`def tool_modbus_read(register_address_start, count=1):`);
+    builder.addStatements(`  return tool_modbus_driver.tool_modbus_read(register_address_start, count)`);
+    builder.addStatements(`end`);
+    builder.addStatements(`def tool_modbus_write(register_address_start, data, count=1):`);
+    builder.addStatements(`  return tool_modbus_driver.tool_modbus_write(register_address_start, data, count)`);
+    builder.addStatements(`end`);
+    builder.addStatements(`####### Tool Modbus Functions Definitions End #######`);
+    
+    return builder;
+};
+
+// upgradeNode is optional
+const upgradeApplicationNode
+  = (loadedNode: ApplicationNode, defaultNode: ToolModbusDriverAppNode): ToolModbusDriverAppNode =>
+      defaultNode;
+
+// downgradeNode is optional
+const downgradeApplicationNode
+  = (loadedNode: ApplicationNode, defaultNode: ToolModbusDriverAppNode): ToolModbusDriverAppNode =>
+      defaultNode;
+
+const behaviors: ApplicationBehaviors = {
+    factory: createApplicationNode,
+    generatePreamble: generatePreambleScriptCode,
+    upgradeNode: upgradeApplicationNode,
+    downgradeNode: downgradeApplicationNode
+};
+
+registerApplicationBehavior(behaviors);
