@@ -1,7 +1,7 @@
 metadata:
   vendorID: "funh"
   urcapID: "tool-modbus-driver"
-  version: 1.0.1
+  version: 1.0.3
   vendorName: "funh"
   urcapName: "Tool Modbus Driver"
   contactInfo: "Energivej 25, 5260 Odense S, Denmark, funh@universal-robots.com"

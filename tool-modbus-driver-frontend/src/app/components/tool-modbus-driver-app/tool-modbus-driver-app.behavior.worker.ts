@@ -15,7 +15,8 @@ const createApplicationNode = (): OptionalPromise<ToolModbusDriverAppNode> => ({
     version: '1.0.0',     // version is required
     deviceAddress: 1,
     baudrate: '9600',
-    isSimulation: false
+    isSimulation: false,
+    monitorSignals: [{ name: 'RTU', register: 0, frequency: 1 }]
 });
 
 // generatePreamble is optional
@@ -44,7 +45,7 @@ const generatePreambleScriptCode = async (node: ToolModbusDriverAppNode): Promis
     builder.addStatements(`def is_tool_modbus_service_reachable():`);
     builder.addStatements(`  return tool_modbus_driver.isReachable()`);
     builder.addStatements(`end`);
-    builder.addStatements(`def is_tool_modbus_connected()`);
+    builder.addStatements(`def is_tool_modbus_connected():`);
     builder.addStatements(`  return tool_modbus_driver.isConnected()`);
     builder.addStatements(`end`);
     builder.addStatements(`def tool_modbus_open(com, bau, my_id):`);

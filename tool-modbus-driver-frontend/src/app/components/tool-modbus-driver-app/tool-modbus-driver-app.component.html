@@ -1,26 +1,82 @@
 @if (applicationNode) {
 <div class="component">
-    <div class="simulation">
-        <h3 style="margin-left: 10px; margin-bottom: 20px;">Real</h3>
-        <ur-toggle-switch [toggled]="this.applicationNode.isSimulation" [labelPos]="'before'"
-            (handleToggle)="this.applicationNode.isSimulation = !this.applicationNode.isSimulation; saveNode()"></ur-toggle-switch>
-        <h3>Simulation</h3>
-    </div>
-    <div class="section">
-        <div class="field">
-            <ur-dropdown [disabled]="this.applicationNode.isSimulation"
-                [options]="options"
-                [label]="'Baudrate'"
-                [selectedOption]="this.applicationNode.baudrate"
-                (selectionChange)="onBaudrateSelectionChange($event)"></ur-dropdown>
+    <!-- Device configuration card -->
+    <div class="card">
+        <div class="device-config">
+            <div class="config-left">
+                <div class="simulation">
+                    <h3 style="margin-left: 10px; margin-bottom: 20px;">Real</h3>
+                    <ur-toggle-switch [toggled]="this.applicationNode.isSimulation" [labelPos]="'before'"
+                        (handleToggle)="this.applicationNode.isSimulation = !this.applicationNode.isSimulation; saveNode()"></ur-toggle-switch>
+                    <h3>Simulation</h3>
+                </div>
+                <div class="section">
+                    <div class="field">
+                        <ur-dropdown [disabled]="this.applicationNode.isSimulation"
+                            [options]="options"
+                            [label]="'Baudrate'"
+                            [selectedOption]="this.applicationNode.baudrate"
+                            (selectionChange)="onBaudrateSelectionChange($event)"></ur-dropdown>
+                    </div>
+                    <div class="field">
+                        <ur-dialog-input [type]="'number'" [disabled]="this.applicationNode.isSimulation"
+                            [label]="'Device Address'"
+                            [message]="'Modbus slave device address'"
+                            [validators]="[]" [validation]="{required: true, min:1, max:255}"
+                            (valueChanged)="this.applicationNode.deviceAddress = +$event; saveNode()" [positiveDigitsOnly]="true"
+                            [value]="(applicationNode.deviceAddress ?? 1).toString()" unit="#" [precision]="1"></ur-dialog-input>
+                    </div>
+                </div>
+            </div>
+            <div class="config-right">
+                <ur-button [type]="connected ? 'cta' : 'filled'" [active]="connected"
+                    (clicked)="onActionButtonClick()">{{ connected ? 'Disconnect' : 'Connect' }}</ur-button>
+            </div>
         </div>
-        <div class="field">
-            <ur-dialog-input [type]="'number'" [disabled]="this.applicationNode.isSimulation"
-                [label]="'Device Address'"
-                [message]="'Modbus slave device address'"
-                [validators]="[]" [validation]="{required: true, min:1, max:255}"
-                (valueChanged)="this.applicationNode.deviceAddress = +$event; saveNode()" [positiveDigitsOnly]="true"
-                [value]="(applicationNode.deviceAddress ?? 1).toString()" unit="#" [precision]="1"></ur-dialog-input>
+    </div>
+
+    <!-- Monitor card -->
+    <div class="card">
+        <div class="monitor-header">
+            <h3 class="monitor-title">Monitor (Read Register)</h3>
+            <ur-icon-button [icon]="'plus'" (clicked)="addSignal()"></ur-icon-button>
+        </div>
+        <div class="signal-list">
+            @for (signal of signals; track trackBySignal($index); let i = $index) {
+            <div class="signal-row">
+                <ur-icon-button class="signal-delete" [icon]="'minus'" [type]="'danger'" [size]="'small'"
+                    (clicked)="removeSignal(i)"></ur-icon-button>
+                <div class="field">
+                    <ur-dialog-input [type]="'text'"
+                        [label]="'Name'"
+                        [message]="'Signal name'"
+                        [validators]="[]"
+                        [value]="signal.name ?? ''"
+                        (valueChanged)="onSignalNameChanged(i, $event)"></ur-dialog-input>
+                </div>
+                <div class="field">
+                    <ur-dialog-input [type]="'number'"
+                        [label]="'Register'"
+                        [message]="'Register address to read'"
+                        [validators]="[]" [positiveDigitsOnly]="true" [precision]="1"
+                        [value]="(signal.register ?? 0).toString()"
+                        (valueChanged)="onSignalRegisterChanged(i, $event)"></ur-dialog-input>
+                </div>
+                <div class="field">
+                    <ur-dialog-input [type]="'number'"
+                        [label]="'Frequency'"
+                        [message]="'Update rate in Hz (max 20)'"
+                        [validators]="[]" [validation]="{min: 1, max: 20}" [positiveDigitsOnly]="true" [precision]="1"
+                        [value]="(signal.frequency ?? 1).toString()" unit="Hz"
+                        (valueChanged)="onSignalFrequencyChanged(i, $event)"></ur-dialog-input>
+                </div>
+                <div class="monitor-value">
+                    <span class="monitor-value-label">Value</span>
+                    <span class="monitor-value-number"
+                        [class.small]="(monitorValues[i] ?? '-').length > 8">{{ monitorValues[i] ?? '-' }}</span>
+                </div>
+            </div>
+            }
         </div>
     </div>
 </div>
