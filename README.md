@@ -91,6 +91,8 @@ When you do not need the Tool Modbus feature, select **Simulation** on the appli
 page. This turns the feature off without affecting the robot runtime (the tool serial
 port is not opened and `set_tool_communication` is not called).
 
+![Simulation toggle](figures/4_simulation_toggler.png)
+
 ### Custom communication setup
 
 If you need a custom communication setup, skip the application node's auto-generated
