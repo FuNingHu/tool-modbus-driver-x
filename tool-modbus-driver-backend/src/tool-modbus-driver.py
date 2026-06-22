@@ -55,14 +55,25 @@ def isConnected():
     return connectState
 
 
-def openMaster(com, bau, newId):
+def _resolve_parity(verification):
+    # accepts the Verification dropdown string ("None 8 1" / "Odd 8 1" / "Even 8 1"),
+    # a parity code (0/1/2) or a parity letter (N/O/E); defaults to none.
+    token = str(verification).strip().lower()
+    if token.startswith("odd") or token in ("1", "o"):
+        return serial.PARITY_ODD
+    if token.startswith("even") or token in ("2", "e"):
+        return serial.PARITY_EVEN
+    return serial.PARITY_NONE
+
+
+def openMaster(com, bau, newId, verification="None"):
     try:
         global master, connectState, myId
         myId = str(newId)
         master = minimalmodbus.Instrument(com, int(myId))
         master.serial.baudrate = int(bau)
         master.serial.bytesize = 8
-        master.serial.parity = serial.PARITY_NONE
+        master.serial.parity = _resolve_parity(verification)
         master.serial.stopbits = serial.STOPBITS_ONE
         master.serial.timeout = 1.0
         master.mode = minimalmodbus.MODE_RTU
@@ -74,6 +85,56 @@ def openMaster(com, bau, newId):
         connectState = "false"
         print(f"Error: {exc}")
         return str(exc)
+
+
+def scanDeviceAddress(com, bau, startId=1, endId=247):
+    # Probe each slave address; a timeout/no-answer means no device there,
+    # while any other reply (success or a Modbus slave exception) means a
+    # device is present at that address. Used to find an unknown slave address.
+    global master, connectState
+    try:
+        # free the serial port if a master is currently open
+        if master is not None and getattr(master, "serial", None) is not None:
+            master.serial.close()
+        master = None
+        connectState = "false"
+
+        found = []
+        for sid in range(int(startId), int(endId) + 1):
+            try:
+                instr = minimalmodbus.Instrument(com, sid)
+                instr.serial.baudrate = int(bau)
+                instr.serial.bytesize = 8
+                instr.serial.parity = serial.PARITY_NONE
+                instr.serial.stopbits = serial.STOPBITS_ONE
+                instr.serial.timeout = 0.15
+                instr.mode = minimalmodbus.MODE_RTU
+                instr.clear_buffers_before_each_transaction = True
+                hit = False
+                try:
+                    instr.read_registers(0, 1, functioncode=3)
+                    found.append(f"{sid}:OK")
+                    hit = True
+                except Exception as exc:
+                    msg = str(exc).lower()
+                    if "no communication" in msg or "no answer" in msg or "timeout" in msg:
+                        pass  # nothing answered at this address
+                    elif "crc" in msg or "invalid response" in msg or "registered" in msg:
+                        pass  # garbled frame, likely wrong baudrate
+                    else:
+                        # device answered with a Modbus exception => it exists here
+                        found.append(f"{sid}:{exc}")
+                        hit = True
+                finally:
+                    instr.serial.close()
+                # stop scanning as soon as a device answers
+                if hit:
+                    return found
+            except Exception as exc:
+                return [f"error:{exc}"]
+        return found
+    except Exception as exc:
+        return [f"error:{exc}"]
 
 
 def tool_modbus_read(register_address, count=1):
@@ -126,6 +187,7 @@ server.register_function(getMyId, "getMyId")
 server.register_function(isReachable, "isReachable")
 server.register_function(isConnected, "isConnected")
 server.register_function(openMaster, "openMaster")
+server.register_function(scanDeviceAddress, "scanDeviceAddress")
 server.register_function(tool_modbus_read, "tool_modbus_read")
 server.register_function(tool_modbus_write, "tool_modbus_write")
 server.serve_forever()

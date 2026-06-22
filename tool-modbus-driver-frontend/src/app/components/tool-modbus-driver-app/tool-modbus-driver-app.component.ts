@@ -5,6 +5,7 @@ import { ApplicationPresenterAPI, ApplicationPresenter, RobotSettings } from '@u
 import { MonitorSignal, ToolModbusDriverAppNode } from './tool-modbus-driver-app.node';
 import { XmlRpcClient } from '../xmlrpc/xmlrpc-client';
 import { URCAP_ID, VENDOR_ID } from 'src/generated/contribution-constants';
+import { BAUDRATE_OPTIONS, DEFAULT_AUTO_INCREMENT, DEFAULT_CONNECTED, MODE_OPTIONS, VERIFICATION_OPTIONS } from '../constants';
 
 @Component({
     templateUrl: './tool-modbus-driver-app.component.html',
@@ -22,10 +23,21 @@ export class ToolModbusDriverAppComponent implements ApplicationPresenter, OnCha
 
     private xmlrpc: XmlRpcClient;
     response: Promise<string> | null = null;
-    options = ['1200', '2400', '4800', '9600', '19200', '38400', '57600', '115200'];
+    options = BAUDRATE_OPTIONS;
+    modeOptions = MODE_OPTIONS;
+    verificationOptions = VERIFICATION_OPTIONS;
 
     // whether the modbus master is currently open
-    connected = false;
+    connected = DEFAULT_CONNECTED;
+    // whether an address scan is currently running
+    scanning = false;
+    // addresses found by the last scan (comma-separated), or null
+    foundAddress: string | null = null;
+    // estimated remaining scan time in seconds
+    scanRemaining = 0;
+    private scanCountdownTimer?: ReturnType<typeof setInterval>;
+    private readonly scanCount = 247;
+    private readonly scanSecondsPerAddress = 0.2;
     // live value read from each monitored register, aligned with monitorSignals index
     monitorValues: string[] = [];
     private monitorTimers: Array<ReturnType<typeof setInterval>> = [];
@@ -67,7 +79,7 @@ export class ToolModbusDriverAppComponent implements ApplicationPresenter, OnCha
                 console.log('tool modbus driver daemon isReachable: ', res);
             });
             this.xmlrpc.methodCall('isConnected').then(res => {
-                this.connected = res === 'true' || (res as unknown) === true;
+                this.setConnected(res === 'true' || (res as unknown) === true);
                 this.restartMonitors();
                 this.cd.detectChanges();
             });
@@ -76,6 +88,15 @@ export class ToolModbusDriverAppComponent implements ApplicationPresenter, OnCha
 
     ngOnDestroy(): void {
         this.stopMonitors();
+        this.stopScanCountdown();
+    }
+
+    // remaining scan time formatted as mm:ss
+    get scanRemainingText(): string {
+        const total = Math.max(0, this.scanRemaining);
+        const minutes = Math.floor(total / 60);
+        const seconds = total % 60;
+        return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
     }
 
     get signals(): MonitorSignal[] {
@@ -87,6 +108,16 @@ export class ToolModbusDriverAppComponent implements ApplicationPresenter, OnCha
         this.saveNode();
     }
 
+    // keep the connection flag and the persisted node in sync; isConnect mirrors
+    // the action button state (true while it shows "Disconnect")
+    private setConnected(value: boolean): void {
+        this.connected = value;
+        if (this.applicationNode && this.applicationNode.isConnect !== value) {
+            this.applicationNode.isConnect = value;
+            this.saveNode();
+        }
+    }
+
     async onActionButtonClick(): Promise<void> {
         if (!this.xmlrpc) {
             return;
@@ -94,25 +125,92 @@ export class ToolModbusDriverAppComponent implements ApplicationPresenter, OnCha
         try {
             if (this.connected) {
                 await this.xmlrpc.methodCall('closeMaster');
-                this.connected = false;
+                this.setConnected(false);
                 this.stopMonitors();
             } else {
                 const result = await this.xmlrpc.methodCall(
                     'openMaster',
                     this.modbusPort,
                     String(this.applicationNode.baudrate),
-                    Number(this.applicationNode.deviceAddress)
+                    Number(this.applicationNode.deviceAddress),
+                    String(this.applicationNode.verification ?? 'None')
                 );
-                this.connected = result === 'OK';
+                this.setConnected(result === 'OK');
                 if (this.connected) {
                     this.restartMonitors();
                 }
             }
         } catch {
-            this.connected = false;
+            this.setConnected(false);
             this.stopMonitors();
         } finally {
             this.cd.detectChanges();
+        }
+    }
+
+    async onScanClick(): Promise<void> {
+        if (!this.xmlrpc || this.scanning) {
+            return;
+        }
+        // free the bus: stop polling and drop the connection before scanning
+        this.setConnected(false);
+        this.stopMonitors();
+        this.foundAddress = null;
+        this.scanning = true;
+        this.scanRemaining = Math.ceil(this.scanCount * this.scanSecondsPerAddress);
+        this.startScanCountdown();
+        this.cd.detectChanges();
+        try {
+            console.log('Scanning Modbus addresses 1..247 at baudrate', this.applicationNode.baudrate, '...');
+            const res = await this.xmlrpc.methodCall(
+                'scanDeviceAddress',
+                this.modbusPort,
+                String(this.applicationNode.baudrate)
+            );
+            console.log('Modbus address scan result:', res);
+            const addresses = Array.isArray(res)
+                ? res
+                    .map(item => String(item).split(':')[0].trim())
+                    .filter(address => address !== '' && address.toLowerCase() !== 'error')
+                : [];
+            this.foundAddress = addresses.length ? addresses.join(', ') : null;
+            if (addresses.length) {
+                this.applicationAPI?.snackbarService?.showSnackbar(
+                    `Found ${addresses.length} device(s). Device Address: ${addresses.join(', ')}`,
+                    'success',
+                    'Tool Modbus Driver Scan'
+                );
+            } else {
+                this.applicationAPI?.snackbarService?.showSnackbar(
+                    'Found 0 device',
+                    'warning',
+                    'Tool Modbus Driver Scan'
+                );
+            }
+        } catch (err) {
+            console.log('Modbus address scan failed:', err);
+            this.foundAddress = null;
+        } finally {
+            this.stopScanCountdown();
+            this.scanning = false;
+            this.cd.detectChanges();
+        }
+    }
+
+    private startScanCountdown(): void {
+        this.stopScanCountdown();
+        this.scanCountdownTimer = setInterval(() => {
+            if (this.scanRemaining > 0) {
+                this.scanRemaining--;
+                this.cd.detectChanges();
+            }
+        }, 1000);
+    }
+
+    private stopScanCountdown(): void {
+        if (this.scanCountdownTimer) {
+            clearInterval(this.scanCountdownTimer);
+            this.scanCountdownTimer = undefined;
         }
     }
 
@@ -120,9 +218,44 @@ export class ToolModbusDriverAppComponent implements ApplicationPresenter, OnCha
         const name = this.generateSignalName(this.signals.map(signal => signal.name));
         const lastSignal = this.signals[this.signals.length - 1];
         const register = lastSignal ? Number(lastSignal.register) + 1 : 0;
-        this.applicationNode.monitorSignals = [...this.signals, { name, register, frequency: 1 }];
+        this.applicationNode.monitorSignals = [...this.signals, {
+            mode: 'Read', name, register, frequency: 1, writeValue: 0, autoIncrement: DEFAULT_AUTO_INCREMENT
+        }];
         this.saveNode();
         this.restartMonitors();
+    }
+
+    onSignalModeChanged(index: number, event: unknown): void {
+        const signal = this.signals[index];
+        if (!signal) {
+            return;
+        }
+        const value =
+            event && typeof event === 'object' && 'value' in event
+                ? (event as { value: unknown }).value
+                : event;
+        signal.mode = String(value);
+        this.saveNode();
+        // Read rows poll the register, Write rows push the value; refresh the timers
+        this.restartMonitors();
+    }
+
+    onSignalWriteValueChanged(index: number, value: unknown): void {
+        const signal = this.signals[index];
+        if (!signal) {
+            return;
+        }
+        signal.writeValue = Number(value);
+        this.saveNode();
+    }
+
+    onSignalAutoIncrementChanged(index: number, checked: unknown): void {
+        const signal = this.signals[index];
+        if (!signal) {
+            return;
+        }
+        signal.autoIncrement = checked === true;
+        this.saveNode();
     }
 
     // generate a unique default name: RTU, RTU_1, RTU_2, ...
@@ -192,17 +325,22 @@ export class ToolModbusDriverAppComponent implements ApplicationPresenter, OnCha
                 return;
             }
             const intervalMs = Math.max(50, Math.round(1000 / frequency));
-            this.monitorTimers[index] = setInterval(() => this.enqueueRead(index), intervalMs);
+            // Read rows poll the register; Write rows push the value (optionally auto-incrementing)
+            const tick = signal?.mode === 'Write'
+                ? () => this.enqueueBusOp(index, () => this.writeSignalValue(index))
+                : () => this.enqueueBusOp(index, () => this.readSignalValue(index));
+            this.monitorTimers[index] = setInterval(tick, intervalMs);
         });
     }
 
-    // queue a read for the given signal onto the serial chain (at most one pending per signal)
-    private enqueueRead(index: number): void {
+    // queue a bus operation for the given signal onto the serial chain
+    // (at most one pending per signal; Modbus RTU is half-duplex so all ops are serialized)
+    private enqueueBusOp(index: number, op: () => Promise<void>): void {
         if (!this.xmlrpc || !this.connected || this.monitorPending[index]) {
             return;
         }
         this.monitorPending[index] = true;
-        this.readChain = this.readChain.then(() => this.readSignalValue(index));
+        this.readChain = this.readChain.then(op);
     }
 
     private stopMonitors(): void {
@@ -232,12 +370,44 @@ export class ToolModbusDriverAppComponent implements ApplicationPresenter, OnCha
         }
     }
 
+    private async writeSignalValue(index: number): Promise<void> {
+        const signal = this.signals[index];
+        if (!this.xmlrpc || !this.connected || !signal) {
+            this.monitorPending[index] = false;
+            return;
+        }
+        try {
+            // when auto-increment is on, bump the value by 1 each tick before writing
+            if (signal.autoIncrement) {
+                signal.writeValue = (Number(signal.writeValue) || 0) + 1;
+                this.saveNode();
+            }
+            const register = Number(signal.register) || 0;
+            const value = Number(signal.writeValue) || 0;
+            await this.xmlrpc.methodCall('tool_modbus_write', register, value, 1);
+        } catch {
+            // ignore transient write errors; next tick will retry
+        } finally {
+            this.monitorPending[index] = false;
+            this.cd.detectChanges();
+        }
+    }
+
     onBaudrateSelectionChange(event: unknown): void {
         const value =
             event && typeof event === 'object' && 'value' in event
                 ? (event as { value: unknown }).value
                 : event;
         this.applicationNode.baudrate = String(value);
+        this.saveNode();
+    }
+
+    onVerificationSelectionChange(event: unknown): void {
+        const value =
+            event && typeof event === 'object' && 'value' in event
+                ? (event as { value: unknown }).value
+                : event;
+        this.applicationNode.verification = String(value);
         this.saveNode();
     }
 

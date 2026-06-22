@@ -8,6 +8,7 @@ import {
 } from '@universal-robots/contribution-api';
 import { ToolModbusDriverAppNode } from './tool-modbus-driver-app.node';
 import { URCAP_ID, VENDOR_ID } from 'src/generated/contribution-constants';
+import { DEFAULT_AUTO_INCREMENT, DEFAULT_VERIFICATION } from '../constants';
 
 // factory is required
 const createApplicationNode = (): OptionalPromise<ToolModbusDriverAppNode> => ({
@@ -15,8 +16,10 @@ const createApplicationNode = (): OptionalPromise<ToolModbusDriverAppNode> => ({
     version: '1.0.0',     // version is required
     deviceAddress: 1,
     baudrate: '9600',
+    verification: DEFAULT_VERIFICATION,
     isSimulation: false,
-    monitorSignals: [{ name: 'RTU', register: 0, frequency: 1 }]
+    isConnect: false,
+    monitorSignals: [{ mode: 'Read', name: 'RTU', register: 0, frequency: 1, writeValue: 0, autoIncrement: DEFAULT_AUTO_INCREMENT }]
 });
 
 // generatePreamble is optional
@@ -24,11 +27,18 @@ const generatePreambleScriptCode = async (node: ToolModbusDriverAppNode): Promis
     const builder = new ScriptBuilder();
     const url = `servicegateway/${VENDOR_ID}/${URCAP_ID}/tool-modbus-driver-backend/xmlrpc`;
     builder.assign('tool_modbus_driver',`rpc_factory("xmlrpc","${location.protocol}//${url}/")`);
+    if(node.isConnect){
+        builder.popup('Tool Modbus Driver Applicationis connected, please disconnect first.', 'Tool Modbus Driver', PopupLevel.WARNING, true);
+        builder.halt();
+    }
     if (!node.isSimulation) {
+        // map the Verification dropdown to set_tool_communication's parity arg:
+        // 0 = none, 1 = odd, 2 = even (stop_bits is fixed to 1)
+        const parity = node.verification?.startsWith('Odd') ? 1 : node.verification?.startsWith('Even') ? 2 : 0;
         builder.addStatements('set_tool_voltage(24)');
-        builder.addStatements(`set_tool_communication(True, ${node.baudrate}, 0, 1, 1.0, 3.5)`);
+        builder.addStatements(`set_tool_communication(True, ${node.baudrate}, ${parity}, 1, 1.0, 3.5)`);
         builder.sleep(0.2);
-        builder.addStatements(`tool_modbus_driver.openMaster("/dev/ur-ttylink/ttyTool", "${node.baudrate}", ${node.deviceAddress})`);
+        builder.addStatements(`tool_modbus_driver.openMaster("/dev/ur-ttylink/ttyTool", "${node.baudrate}", ${node.deviceAddress}, "${node.verification}")`);
         
         // builder.popup('Tool Modbus Driver is ready.', 'Tool_modbus_driver_ready', PopupLevel.INFO, true);
     }

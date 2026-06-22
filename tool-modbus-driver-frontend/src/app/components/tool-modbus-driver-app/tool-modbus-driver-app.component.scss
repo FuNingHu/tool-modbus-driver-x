@@ -26,6 +26,7 @@
   .config-right {
     display: flex;
     align-items: stretch;
+    gap: 12px;
 
     ur-button {
       display: flex;
@@ -42,6 +43,42 @@
         font-size: 20px;
       }
     }
+
+    ur-button.scan-button {
+      width: 130px;
+
+      // match the Connect button's border + corner radius and allow a two-line label
+      ::ng-deep .ur-button-label {
+        border: 1px solid transparent;
+        border-radius: var(--border-radius-xlarge);
+        white-space: normal;
+        line-height: 1.15;
+        text-align: center;
+      }
+
+      .scan-label {
+        display: block;
+        width: 100%;
+        font-size: 16px;
+        line-height: 1.15;
+        word-break: break-word;
+      }
+
+      // first line matches the "Connect" button text size
+      .scan-title {
+        display: block;
+        font-size: 20px;
+      }
+
+      // second line: smaller and greyed out
+      .scan-sub {
+        display: block;
+        margin-top: 4px;
+        font-size: 12px;
+        color: var(--color-font-secondary, #5a6470);
+      }
+    }
+
   }
 
   .section {
@@ -66,11 +103,16 @@
     max-width: 150px;
   }
 
+  // keep the title 15px from the monitor card's top edge
+  .monitor-card {
+    padding-top: 16px;
+  }
+
   .monitor-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin: 0.5rem 0.5rem 0;
+    margin: 0 0.5rem 0;
     padding-bottom: 0.5rem;
     border-bottom: 1px solid #d6d8db;
   }
@@ -87,10 +129,12 @@
   }
 
   .signal-row {
-    padding: 0.5rem 0.5rem 1rem;
+    padding: 0.25rem 0.5rem;
     display: flex;
-    gap: 16px;
-    align-items: flex-start;
+    gap: 10px;
+    // pin the row height so switching Mode (Read <-> Write) doesn't change it
+    align-items: center;
+    min-height: 64px;
 
     &:nth-child(odd) {
       background: #ffffff;
@@ -100,13 +144,25 @@
       background: #f2f3f4;
     }
 
+    // input fields share the remaining width and may shrink (min-width:0)
+    // so their inner content never overflows and overlaps the next column
     .field {
-      width: 140px;
-      flex: 0 0 140px;
+      flex: 1 1 0;
+      min-width: 0;
+      max-width: 140px;
     }
 
-    .field ur-dialog-input {
+    // Mode is a dropdown, which needs more room than a plain input;
+    // match the Baudrate dropdown width
+    .field.field-mode {
+      flex: 0 0 200px;
+      max-width: 200px;
+    }
+
+    .field ur-dialog-input,
+    .field ur-dropdown {
       width: 100%;
+      min-width: 0;
     }
 
     .monitor-value {
@@ -144,6 +200,11 @@
     .signal-delete {
       align-self: center;
       flex: 0 0 auto;
+    }
+
+    .auto-increment {
+      align-self: center;
+      white-space: nowrap;
     }
   }
 }

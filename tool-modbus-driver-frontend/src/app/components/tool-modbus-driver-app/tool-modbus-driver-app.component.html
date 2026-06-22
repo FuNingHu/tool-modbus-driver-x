@@ -12,23 +12,43 @@
                 </div>
                 <div class="section">
                     <div class="field">
-                        <ur-dropdown [disabled]="this.applicationNode.isSimulation"
+                        <ur-dropdown [disabled]="this.applicationNode.isSimulation || connected"
                             [options]="options"
                             [label]="'Baudrate'"
                             [selectedOption]="this.applicationNode.baudrate"
                             (selectionChange)="onBaudrateSelectionChange($event)"></ur-dropdown>
                     </div>
                     <div class="field">
-                        <ur-dialog-input [type]="'number'" [disabled]="this.applicationNode.isSimulation"
+                        <ur-dialog-input [type]="'number'" [disabled]="this.applicationNode.isSimulation || connected"
                             [label]="'Device Address'"
                             [message]="'Modbus slave device address'"
-                            [validators]="[]" [validation]="{required: true, min:1, max:255}"
+                            [validators]="[]" [validation]="{required: true, min:1, max:254}"
                             (valueChanged)="this.applicationNode.deviceAddress = +$event; saveNode()" [positiveDigitsOnly]="true"
                             [value]="(applicationNode.deviceAddress ?? 1).toString()" unit="#" [precision]="1"></ur-dialog-input>
+                    </div>
+                    <div class="field">
+                        <ur-dropdown [disabled]="this.applicationNode.isSimulation || connected"
+                            [options]="verificationOptions"
+                            [label]="'Verification'"
+                            [selectedOption]="this.applicationNode.verification"
+                            (selectionChange)="onVerificationSelectionChange($event)"></ur-dropdown>
                     </div>
                 </div>
             </div>
             <div class="config-right">
+                <ur-button class="scan-button" [type]="'rect'" [disabled]="scanning || connected"
+                    (clicked)="onScanClick()">
+                    @if (scanning) {
+                        <span class="scan-label">Scanning...<br>{{ scanRemainingText }}</span>
+                    } @else if (foundAddress) {
+                        <span class="scan-label">
+                            <span class="scan-title">Scan</span>
+                            <span class="scan-sub">Device Address: {{ foundAddress }}</span>
+                        </span>
+                    } @else {
+                        <span class="scan-label"><span class="scan-title">Scan</span></span>
+                    }
+                </ur-button>
                 <ur-button [type]="connected ? 'cta' : 'filled'" [active]="connected"
                     (clicked)="onActionButtonClick()">{{ connected ? 'Disconnect' : 'Connect' }}</ur-button>
             </div>
@@ -36,9 +56,9 @@
     </div>
 
     <!-- Monitor card -->
-    <div class="card">
+    <div class="card monitor-card">
         <div class="monitor-header">
-            <h3 class="monitor-title">Monitor (Read Register)</h3>
+            <h3 class="monitor-title">Monitor (R/W register)</h3>
             <ur-icon-button [icon]="'plus'" (clicked)="addSignal()"></ur-icon-button>
         </div>
         <div class="signal-list">
@@ -46,6 +66,13 @@
             <div class="signal-row">
                 <ur-icon-button class="signal-delete" [icon]="'minus'" [type]="'danger'" [size]="'small'"
                     (clicked)="removeSignal(i)"></ur-icon-button>
+                <div class="field field-mode">
+                    <ur-dropdown
+                        [options]="modeOptions"
+                        [label]="'Mode'"
+                        [selectedOption]="signal.mode ?? 'Read'"
+                        (selectionChange)="onSignalModeChanged(i, $event)"></ur-dropdown>
+                </div>
                 <div class="field">
                     <ur-dialog-input [type]="'text'"
                         [label]="'Name'"
@@ -70,11 +97,22 @@
                         [value]="(signal.frequency ?? 1).toString()" unit="Hz"
                         (valueChanged)="onSignalFrequencyChanged(i, $event)"></ur-dialog-input>
                 </div>
-                <div class="monitor-value">
-                    <span class="monitor-value-label">Value</span>
-                    <span class="monitor-value-number"
-                        [class.small]="(monitorValues[i] ?? '-').length > 8">{{ monitorValues[i] ?? '-' }}</span>
+                <div class="field">
+                    <ur-dialog-input [type]="signal.mode === 'Write' ? 'number' : 'text'"
+                        [label]="'Value'"
+                        [message]="signal.mode === 'Write' ? 'Value to write' : 'Latest read value'"
+                        [disabled]="signal.mode !== 'Write'"
+                        [validators]="[]" [positiveDigitsOnly]="true" [precision]="1"
+                        [value]="signal.mode === 'Write' ? (signal.writeValue ?? 0).toString() : (monitorValues[i] ?? '-')"
+                        (valueChanged)="onSignalWriteValueChanged(i, $event)"></ur-dialog-input>
                 </div>
+                @if (signal.mode === 'Write') {
+                <div class="auto-increment">
+                    <ur-checkbox [checked]="signal.autoIncrement ?? false" [labelPos]="'after'"
+                        [label]="'auto increment by 1'"
+                        (handleChange)="onSignalAutoIncrementChanged(i, $event)"></ur-checkbox>
+                </div>
+                }
             </div>
             }
         </div>
