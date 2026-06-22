@@ -14,7 +14,7 @@ The `ApplicationNode` is the persisted configuration object for this app node. I
 interface is defined in
 `tool-modbus-driver-frontend/src/app/components/tool-modbus-driver-app/tool-modbus-driver-app.node.ts`.
 
-Fields:
+![Application overview](figures/3_application_overview.png)
 
 | Field | Description |
 |-------|-------------|
@@ -25,8 +25,27 @@ Fields:
 | `isConnect` | Whether connected (mirrors the Connect/Disconnect button state) |
 | `monitorSignals` | List of monitored signals; each has `mode` (Read/Write), `name`, `register`, `frequency`, `writeValue`, `autoIncrement` |
 
+### Monitoring registers (Monitor)
 
-（此处添加图片）
+Click **Connect** to open the connection, then use the **Monitor (R/W register)** card to
+watch and drive registers live:
+
+- Press **+** to add a signal row; press **−** to remove one.
+- Set each row's **Mode** (Read/Write), **Name**, **Register**, and **Frequency** (Hz).
+- In **Read** mode the polled value is shown in the **Value** field.
+- In **Write** mode type a value to send; enable **auto increment by 1** to increment and
+  write it every `1/Frequency` seconds.
+
+![Online register monitor](figures/2_application_online_monitor.png)
+
+### Scanning for the device address
+
+If you do not know the device's slave address, click **Scan**. It probes addresses from
+1 and stops at the first device that responds, showing the found Device Address on the
+button and in a success notification. Set the matching **Baudrate** / **Verification**
+before scanning so the device can answer.
+
+![Scan found a device](figures/1_scan_found.png)
 
 ## Reading/Writing Registers with Script in the Program Page
 
