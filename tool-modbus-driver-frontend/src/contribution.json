@@ -7,24 +7,8 @@
       "componentTagName": "funh-tool-modbus-driver-tool-modbus-driver-app"
     }
     ],
-  "programNodes": [ 
-    {
-      "excludeFromToolbox": false,
-      "translationPath": "assets/i18n/",
-      "iconURI": "assets/icons/tool-modbus-driver.svg",
-      "behaviorURI": "tool-modbus-driver-pg.worker.js",
-      "presenterURI": "main.js",
-      "componentTagName": "funh-tool-modbus-driver-tool-modbus-driver-pg"
-    }],
+  "programNodes": [],
   "smartSkills": [],
-  "sidebarItems": [ 
-    {
-      "name": "funh-tool-modbus-driver-tool-modbus-driver-bar",
-      "iconURI": "assets/icons/tool-modbus-driver.svg",
-      "presenterURI": "main.js",
-      "componentTagName": "funh-tool-modbus-driver-tool-modbus-driver-bar",
-      "behaviorURI": "tool-modbus-driver-bar.worker.js",
-      "translationPath": "assets/i18n/"
-    }],
+  "sidebarItems": [],
   "operatorScreens": []
 }
