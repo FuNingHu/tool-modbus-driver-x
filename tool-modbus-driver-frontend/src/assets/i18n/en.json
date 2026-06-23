@@ -3,7 +3,7 @@
           "nodes": {
             "funh-tool-modbus-driver-tool-modbus-driver-app": {
               "title": "Tool Modbus Driver Application",
-              "supportiveText": "Tool Modbus Driver - Supportive Text"
+              "supportiveText": "access ModbusRTU via Tool-I/O"
               }
         }
     },
