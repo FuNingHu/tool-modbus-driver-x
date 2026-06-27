@@ -47,6 +47,7 @@ export class ToolModbusDriverAppComponent implements ApplicationPresenter, OnCha
     private readChain: Promise<void> = Promise.resolve();
     private monitorPending: boolean[] = [];
     private readonly modbusPort = '/dev/ur-ttylink/ttyTool';
+    // ensure the tool_modbus application variable is only created once
 
     constructor(
         protected readonly translateService: TranslateService,
@@ -90,6 +91,7 @@ export class ToolModbusDriverAppComponent implements ApplicationPresenter, OnCha
         this.stopMonitors();
         this.stopScanCountdown();
     }
+
 
     // remaining scan time formatted as mm:ss
     get scanRemainingText(): string {

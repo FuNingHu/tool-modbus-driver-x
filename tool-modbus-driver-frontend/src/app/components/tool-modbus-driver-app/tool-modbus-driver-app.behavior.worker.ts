@@ -3,8 +3,8 @@ import {
     ApplicationBehaviors,
     ApplicationNode, OptionalPromise,
     PopupLevel,
+    ScriptBuilder,
     registerApplicationBehavior,
-    ScriptBuilder
 } from '@universal-robots/contribution-api';
 import { ToolModbusDriverAppNode } from './tool-modbus-driver-app.node';
 import { URCAP_ID, VENDOR_ID } from 'src/generated/contribution-constants';
@@ -63,11 +63,11 @@ const generatePreambleScriptCode = async (node: ToolModbusDriverAppNode): Promis
     builder.addStatements(`  set_tool_communication(True, bau, 0,1,1.0,3.5)`)
     builder.addStatements(`  return tool_modbus_driver.openMaster(com, bau, my_id)`);
     builder.addStatements(`end`);
-    builder.addStatements(`def tool_modbus_read(register_address_start, count=1):`);
-    builder.addStatements(`  return tool_modbus_driver.tool_modbus_read(register_address_start, count)`);
+    builder.addStatements(`def tool_modbus_read(register_address_start, count=1, slave_id=${node.deviceAddress}):`);
+    builder.addStatements(`  return tool_modbus_driver.tool_modbus_read(register_address_start, count, slave_id)`);
     builder.addStatements(`end`);
-    builder.addStatements(`def tool_modbus_write(register_address_start, data, count=1):`);
-    builder.addStatements(`  return tool_modbus_driver.tool_modbus_write(register_address_start, data, count)`);
+    builder.addStatements(`def tool_modbus_write(register_address_start, data, count=1, slave_id=${node.deviceAddress}):`);
+    builder.addStatements(`  return tool_modbus_driver.tool_modbus_write(register_address_start, data, count, slave_id)`);
     builder.addStatements(`end`);
     builder.addStatements(`####### Tool Modbus Functions Definitions End #######`);
     

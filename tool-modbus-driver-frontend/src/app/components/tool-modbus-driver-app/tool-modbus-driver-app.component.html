@@ -5,10 +5,10 @@
         <div class="device-config">
             <div class="config-left">
                 <div class="simulation">
-                    <h3 style="margin-left: 10px; margin-bottom: 20px;">Real</h3>
-                    <ur-toggle-switch [toggled]="this.applicationNode.isSimulation" [labelPos]="'before'"
+                    <h3 style="margin-left: 10px; margin-bottom: 20px;">Simulation</h3>
+                    <ur-toggle-switch [toggled]="!this.applicationNode.isSimulation" [labelPos]="'before'"
                         (handleToggle)="this.applicationNode.isSimulation = !this.applicationNode.isSimulation; saveNode()"></ur-toggle-switch>
-                    <h3>Simulation</h3>
+                    <h3>Real</h3>
                 </div>
                 <div class="section">
                     <div class="field">

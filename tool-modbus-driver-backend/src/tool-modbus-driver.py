@@ -2,6 +2,7 @@
 # coding:utf-8
 
 import sys
+import threading
 import time
 from socketserver import ThreadingMixIn
 from xmlrpc.server import SimpleXMLRPCRequestHandler, SimpleXMLRPCServer
@@ -14,6 +15,9 @@ XMLRPC_PORT = 54321
 myId = "9"
 master = None
 connectState = "false"
+# Modbus RTU is a half-duplex bus: serialize "set slave address + transaction"
+# so concurrent reads/writes to different slave ids cannot interleave.
+_bus_lock = threading.Lock()
 
 
 def _parse_register_values(data):
@@ -137,15 +141,19 @@ def scanDeviceAddress(com, bau, startId=1, endId=247):
         return [f"error:{exc}"]
 
 
-def tool_modbus_read(register_address, count=1):
+def tool_modbus_read(register_address, count=1, slave_id=None):
     try:
-        read_buf = master.read_registers(int(register_address), int(count), functioncode=3)
+        with _bus_lock:
+            # optionally target a specific slave on the shared bus
+            if slave_id is not None and str(slave_id) != "" and int(slave_id) > 0:
+                master.address = int(slave_id)
+            read_buf = master.read_registers(int(register_address), int(count), functioncode=3)
         return [str(value & 0xFFFF) for value in read_buf]
     except Exception as exc:
         return [str(exc)]
 
 
-def tool_modbus_write(register_address, data, count=1):
+def tool_modbus_write(register_address, data, count=1, slave_id=None):
     try:
         values = _parse_register_values(data)
         expected_count = int(count)
@@ -155,10 +163,14 @@ def tool_modbus_write(register_address, data, count=1):
         if expected_count != len(values):
             return "Count does not match register value length"
 
-        if expected_count == 1:
-            master.write_register(int(register_address), values[0], 0, functioncode=6)
-        else:
-            master.write_registers(int(register_address), values)
+        with _bus_lock:
+            # optionally target a specific slave on the shared bus
+            if slave_id is not None and str(slave_id) != "" and int(slave_id) > 0:
+                master.address = int(slave_id)
+            if expected_count == 1:
+                master.write_register(int(register_address), values[0], 0, functioncode=6)
+            else:
+                master.write_registers(int(register_address), values)
         return "OK"
     except Exception as exc:
         return str(exc)
