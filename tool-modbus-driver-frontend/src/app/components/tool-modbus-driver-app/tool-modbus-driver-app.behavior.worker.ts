@@ -29,7 +29,7 @@ const generatePreambleScriptCode = async (node: ToolModbusDriverAppNode): Promis
     builder.assign('tool_modbus_driver',`rpc_factory("xmlrpc","${location.protocol}//${url}/")`);
     if(node.isConnect){
         builder.popup('Tool Modbus Driver Applicationis connected, please disconnect first.', 'Tool Modbus Driver', PopupLevel.WARNING, true);
-        builder.halt();
+        builder.halt(); 
     }
     if (!node.isSimulation) {
         // map the Verification dropdown to set_tool_communication's parity arg:
