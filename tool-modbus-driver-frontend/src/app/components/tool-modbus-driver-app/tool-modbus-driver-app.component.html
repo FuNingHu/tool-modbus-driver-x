@@ -12,14 +12,14 @@
                 </div>
                 <div class="section">
                     <div class="field">
-                        <ur-dropdown [disabled]="this.applicationNode.isSimulation || connected"
+                        <ur-dropdown [disabled]="this.applicationNode.isSimulation || this.applicationNode.isConnect"
                             [options]="options"
                             [label]="'Baudrate'"
                             [selectedOption]="this.applicationNode.baudrate"
                             (selectionChange)="onBaudrateSelectionChange($event)"></ur-dropdown>
                     </div>
                     <div class="field">
-                        <ur-dialog-input [type]="'number'" [disabled]="this.applicationNode.isSimulation || connected"
+                        <ur-dialog-input [type]="'number'" [disabled]="this.applicationNode.isSimulation || this.applicationNode.isConnect"
                             [label]="'Device Address'"
                             [message]="'Modbus slave device address'"
                             [validators]="[]" [validation]="{required: true, min:1, max:254}"
@@ -27,7 +27,7 @@
                             [value]="(applicationNode.deviceAddress ?? 1).toString()" unit="#" [precision]="1"></ur-dialog-input>
                     </div>
                     <div class="field">
-                        <ur-dropdown [disabled]="this.applicationNode.isSimulation || connected"
+                        <ur-dropdown [disabled]="this.applicationNode.isSimulation || this.applicationNode.isConnect"
                             [options]="verificationOptions"
                             [label]="'Verification'"
                             [selectedOption]="this.applicationNode.verification"
@@ -36,7 +36,7 @@
                 </div>
             </div>
             <div class="config-right">
-                <ur-button class="scan-button" [type]="'rect'" [disabled]="scanning || connected"
+                <ur-button class="scan-button" [type]="'rect'" [disabled]="scanning || this.applicationNode.isConnect"
                     (clicked)="onScanClick()">
                     @if (scanning) {
                         <span class="scan-label">Scanning...<br>{{ scanRemainingText }}</span>
@@ -49,8 +49,8 @@
                         <span class="scan-label"><span class="scan-title">Scan</span></span>
                     }
                 </ur-button>
-                <ur-button [type]="connected ? 'cta' : 'filled'" [active]="connected"
-                    (clicked)="onActionButtonClick()">{{ connected ? 'Disconnect' : 'Connect' }}</ur-button>
+                <ur-button [type]="this.applicationNode.isConnect ? 'cta' : 'filled'" [active]="this.applicationNode.isConnect"
+                    (clicked)="onActionButtonClick()">{{ this.applicationNode.isConnect ? 'Disconnect' : 'Connect' }}</ur-button>
             </div>
         </div>
     </div>

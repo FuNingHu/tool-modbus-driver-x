@@ -8,7 +8,7 @@ import {
 } from '@universal-robots/contribution-api';
 import { ToolModbusDriverAppNode } from './tool-modbus-driver-app.node';
 import { URCAP_ID, VENDOR_ID } from 'src/generated/contribution-constants';
-import { DEFAULT_AUTO_INCREMENT, DEFAULT_VERIFICATION } from '../constants';
+import { DEFAULT_AUTO_INCREMENT, DEFAULT_CONNECTED, DEFAULT_VERIFICATION } from '../constants';
 
 // factory is required
 const createApplicationNode = (): OptionalPromise<ToolModbusDriverAppNode> => ({
@@ -18,7 +18,7 @@ const createApplicationNode = (): OptionalPromise<ToolModbusDriverAppNode> => ({
     baudrate: '9600',
     verification: DEFAULT_VERIFICATION,
     isSimulation: false,
-    isConnect: false,
+    isConnect: DEFAULT_CONNECTED,
     monitorSignals: [{ mode: 'Read', name: 'RTU', register: 0, frequency: 1, writeValue: 0, autoIncrement: DEFAULT_AUTO_INCREMENT }]
 });
 

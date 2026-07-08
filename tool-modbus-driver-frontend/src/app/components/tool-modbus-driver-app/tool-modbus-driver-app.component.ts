@@ -27,8 +27,8 @@ export class ToolModbusDriverAppComponent implements ApplicationPresenter, OnCha
     modeOptions = MODE_OPTIONS;
     verificationOptions = VERIFICATION_OPTIONS;
 
-    // whether the modbus master is currently open
-    connected = DEFAULT_CONNECTED;
+    // // whether the modbus master is currently open
+    // connected = DEFAULT_CONNECTED;
     // whether an address scan is currently running
     scanning = false;
     // addresses found by the last scan (comma-separated), or null
@@ -79,11 +79,15 @@ export class ToolModbusDriverAppComponent implements ApplicationPresenter, OnCha
             this.xmlrpc.methodCall('isReachable').then(res => {
                 console.log('tool modbus driver daemon isReachable: ', res);
             });
-            this.xmlrpc.methodCall('isConnected').then(res => {
-                this.setConnected(res === 'true' || (res as unknown) === true);
+            // The connect button reflects manual operation only. Do NOT sync it from the
+            // backend 'isConnected' state, otherwise a running robot program would flip the
+            // button to "Disconnect" and disturb manual monitoring here. Restore the last
+            // manual state from the persisted node instead.
+            
+            if (this.applicationNode?.isConnect) {
                 this.restartMonitors();
-                this.cd.detectChanges();
-            });
+            }
+            this.cd.detectChanges();
         }
     }
 
@@ -113,7 +117,6 @@ export class ToolModbusDriverAppComponent implements ApplicationPresenter, OnCha
     // keep the connection flag and the persisted node in sync; isConnect mirrors
     // the action button state (true while it shows "Disconnect")
     private setConnected(value: boolean): void {
-        this.connected = value;
         if (this.applicationNode && this.applicationNode.isConnect !== value) {
             this.applicationNode.isConnect = value;
             this.saveNode();
@@ -125,7 +128,7 @@ export class ToolModbusDriverAppComponent implements ApplicationPresenter, OnCha
             return;
         }
         try {
-            if (this.connected) {
+            if (this.applicationNode.isConnect) {
                 await this.xmlrpc.methodCall('closeMaster');
                 this.setConnected(false);
                 this.stopMonitors();
@@ -138,9 +141,7 @@ export class ToolModbusDriverAppComponent implements ApplicationPresenter, OnCha
                     String(this.applicationNode.verification ?? 'None')
                 );
                 this.setConnected(result === 'OK');
-                if (this.connected) {
-                    this.restartMonitors();
-                }
+                this.restartMonitors();
             }
         } catch {
             this.setConnected(false);
@@ -318,7 +319,7 @@ export class ToolModbusDriverAppComponent implements ApplicationPresenter, OnCha
         this.monitorValues = this.signals.map(() => '-');
         this.monitorPending = this.signals.map(() => false);
         this.readChain = Promise.resolve();
-        if (!this.xmlrpc || !this.connected) {
+        if (!this.xmlrpc || !this.applicationNode.isConnect) {
             return;
         }
         this.signals.forEach((signal, index) => {
@@ -338,7 +339,7 @@ export class ToolModbusDriverAppComponent implements ApplicationPresenter, OnCha
     // queue a bus operation for the given signal onto the serial chain
     // (at most one pending per signal; Modbus RTU is half-duplex so all ops are serialized)
     private enqueueBusOp(index: number, op: () => Promise<void>): void {
-        if (!this.xmlrpc || !this.connected || this.monitorPending[index]) {
+        if (!this.xmlrpc || !this.applicationNode.isConnect || this.monitorPending[index]) {
             return;
         }
         this.monitorPending[index] = true;
@@ -356,7 +357,7 @@ export class ToolModbusDriverAppComponent implements ApplicationPresenter, OnCha
 
     private async readSignalValue(index: number): Promise<void> {
         const signal = this.signals[index];
-        if (!this.xmlrpc || !this.connected || !signal) {
+        if (!this.xmlrpc || !this.applicationNode.isConnect || !signal) {
             this.monitorPending[index] = false;
             return;
         }
@@ -374,7 +375,7 @@ export class ToolModbusDriverAppComponent implements ApplicationPresenter, OnCha
 
     private async writeSignalValue(index: number): Promise<void> {
         const signal = this.signals[index];
-        if (!this.xmlrpc || !this.connected || !signal) {
+        if (!this.xmlrpc || !this.applicationNode.isConnect || !signal) {
             this.monitorPending[index] = false;
             return;
         }
