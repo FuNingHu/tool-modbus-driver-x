@@ -4,7 +4,7 @@ This project offers a URCapX tooling that facilitates customized Modbus RTU comm
 
 ## Download
 
-**[⬇ Download the URCapX package (tool-modbus-driver-1.0.7.urcapx)](https://github.com/FuNingHu/tool-modbus-driver-x/raw/main/target/tool-modbus-driver-1.0.7.urcapx)**
+**[⬇ Download latest URCapX file (tool-modbus-driver-1.0.7.urcapx)](https://github.com/FuNingHu/tool-modbus-driver-x/raw/main/target/tool-modbus-driver-1.0.7.urcapx)**
 
 ---
 
