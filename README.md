@@ -2,6 +2,12 @@
 
 This project offers a URCapX tooling that facilitates customized Modbus RTU communication over tool-IO.
 
+## Download
+
+**[⬇ Download the URCapX package (tool-modbus-driver-1.0.7.urcapx)](https://github.com/FuNingHu/tool-modbus-driver-x/raw/main/target/tool-modbus-driver-1.0.7.urcapx)**
+
+---
+
 ## Dependencies
 
 PolyScope X 10.13+.
