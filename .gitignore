@@ -9,7 +9,7 @@ __pycache__/
 
 # Build outputs
 dist/
-# keep target/*.urcapx tracked so the built URCap can be pushed to GitHub
+target/
 
 # Angular cache
 .angular/
